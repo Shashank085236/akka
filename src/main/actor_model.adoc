@@ -1,0 +1,64 @@
+= Overview on Akka Actor model
+:imagesdir: images
+
+====  Why new model?
+* Shared resources can be secured by locks which seriously hampers application performance and concurrency.
+* Deadlocks
+* Threads being blocked making applications non-responsive.
+* Distributed systems do not scale well with slow nature of distributed lock mechanisms.
+* In Modern multi-core computers(No real shared memory concept), CPUs write to local core cache instead of main memory registers.
+Enforcing variable states shared across threads as required(using volatile) is expensive as it forces shipping cache lines across cores.
+* Async call chains are generally implemented using queue where produces produces tasks and workers pick tasks to complete.
+There are 2 basic problems with this approach:
+** There is no acknowledgement to producer when task is completed.
+** There is no way producer can know about task failure due to some exception while executing task by worker.The worker thread has no idea how to cope up with the situation.
+
+
+==== How Actor model solves the problem?
+
+* In Actor model, instead of calling methods, messages are passed around. Akka guarantees one message being processed at a time by an actor naturally solves synchronization and race conditions issues.
+Entities communicate each other through message signals by reacting to signals, changing states and sending signals in order to drive application state forward.
+* Error handling in Actor model:
+** There is an error in task: The service Actor should reply with error message to sender.
+** Service has internal fault: When an Actor fails, parent Actor(Supervisor) is notified and it reacts based on several strategies like restart Actor node or  restart whole sub-tree Actor nodes etc.
+It should be noted however, supervision only handles error scenarios — not graceful stopping. So we need to notify the parent when one of the device actors is stopped.
+
+
+==== Actor hierarchy
+image::actor_top_tree.png[]
+
+```
+ Q. Why do we need such actor hierarchy?
+
+ A. To manage actor lifecycle.
+    - stop actors
+    - preStart() and postStop() hooks
+```
+
+==== Message delivery symantics
+* At-most-once delivery — each message is delivered zero or one time; in more causal terms it means that messages can be lost, but are never duplicated.
+* At-least-once delivery — potentially multiple attempts are made to deliver each message, until at least one succeeds; again, in more causal terms this means that messages can be duplicated but are never lost.
+* Exactly-once delivery — each message is delivered exactly once to the recipient; the message can neither be lost nor be duplicated.
+
+
+Akka provides the following behavior for message sends:
+
+* At-most-once delivery, i.e  no guaranteed delivery.This is cheapest and results in highest performance as it is fire and forget approach without any acknowledgement mechanism in place.
+* Message ordering is maintained per sender, receiver pair.
+
+It is left up to application to build a ack based system if required.
+
+==== Special messages
+
+* Akka provides a Death Watch feature that allows an actor to watch another actor
+and be notified if the other actor is stopped.
+ Unlike supervision, watching is not limited to parent-child relationships,
+  any actor can watch any other actor as long as it knows the ActorRef.
+  After a watched actor stops, the watcher receives a Terminated(actorRef) message
+  which also contains the reference to the watched actor.
+  The watcher can either handle this message explicitly or will fail with a DeathPactException.
+  This latter is useful if the actor can no longer perform its own duties after the watched actor has been stopped.
+* From the outside, any actor can be stopped by sending a special the built-in message, PoisonPill, which instructs the actor to stop.
+
+
+

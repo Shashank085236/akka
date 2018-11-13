@@ -1,0 +1,71 @@
+= Example
+:imagesdir: ./../../../../../images
+
+==== Functionality
+
+* A sensor device in the home connects through some protocol.(out of scope)
+* The component managing network connections accepts the connection.(out of scope)
+* The sensor provides its group and device ID to register with the device manager component of our system.
+* The device manager component handles registration by looking up or creating the actor responsible for keeping sensor state.
+* The actor responds with an acknowledgement, exposing its ActorRef.
+* The networking component now uses the ActorRef for communication between the sensor and device actor without going through the device manager.
+
+==== Device manager hierarchy
+
+image::device_manager_tree.png[]
+
+==== The Registration Protocol
+
+* When a DeviceManager receives a request with a group and device id:
+** If the manager already has an actor for the device group, it forwards the request to it.
+** Otherwise, it creates a new device group actor and then forwards the request.
+* The DeviceGroup actor receives the request to register an actor for the given device:
+** If the group already has an actor for the device, the group actor forwards the request to the device actor.
+** Otherwise, the DeviceGroup actor first creates a device actor and then forwards the request.
+* The device actor receives the request and sends an acknowledgement to the original sender. Since the device actor acknowledges receipt (instead of the group actor), the sensor will now have the ActorRef to send messages directly to its actor.
+
+*** Messages used : RequestTrackDevice, DeviceRegistered
+
+==== Components in brief
+* Device actors:
+ ** return a reading, which requires no state change
+ ** Record a temperature, which updates a single field
+
+* Device Group actors: maintain group membership by adding or removing entries from a map
+* Device Manager actor: manages groups by adding or removing entries from a map
+
+==== Querying device groups
+
+* What if we want to query all devices of a group(may be for all rooms and not just one room)?
+
+* Challenges :
+At the beginning of the query, we can ask all of the existing device actors for the current temperature.
+However, during the lifecycle of the query:
+** A device actor might stop/hung and not be able to respond back with a temperature reading.
+** A new device actor might start up and not be included in the query because we weren’t aware of it.
+
+* Approach can be considered :
+** When a query arrives, the group actor takes a snapshot of the existing device actors and will only ask those actors for the temperature.
+** Actors that start up after the query arrives are ignored.
+** If an actor in the snapshot stops during the query without answering, we will report the fact that it stopped to the sender of the query message.
+** We considered query completed, when all Actors responded in stipulated or reported stopped.
+
+* State definition of devices :
+** It has a temperature available: Temperature.
+** It has responded, but has no temperature available yet: TemperatureNotAvailable.
+** It has stopped before answering: DeviceNotAvailable.
+** It did not respond before the deadline: DeviceTimedOut.
+
+* Query Implementation
+** Bad approach: For several queries which can come simultaneously also, maintain a mapping query->deviceIds.
+** Simpler and superior approach: Create an actor to represent a single query that will perform all task of the query on behalf of Actor group.
+So far we created Actors as entities but this Actor will more represent a process/task.
+
+** Life cycle of query Actor
+
+First, we need to design the lifecycle of our query actor. This consists of identifying its initial state, the first action it will take, and the cleanup — if necessary. The query actor will need the following information:
+
+*** The snapshot and IDs of active device actors to query.
+*** The ID of the request that started the query (so that we can include it in the reply).
+*** The reference of the actor who sent the query. We will send the reply to this actor directly.
+*** A deadline that indicates how long the query should wait for replies. Making this a parameter will simplify testing.(see implementation to understand build in Akka scheduler facility)

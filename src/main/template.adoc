@@ -1,0 +1,114 @@
+= DigitalSafe technical document template
+Your Name <your.email@hpe.com>
+v1.0, 2017-10-27
+
+This paragraph should give a brief overview of the feature or component being
+developed.
+
+
+== Requirements
+
+Give a link to a requirements ticket or document and list the principle (key)
+aspects here:
+
+- Requirement 1
+- Requirement 2
+- Requirement 3...
+
+
+== Implementation details
+
+This section should go into the _implementation_ detail, specifically an
+overview of the different parts of the DigitalSafe code base that would need to
+be modified to serve a specific purpose. Any new hardware or software components
+that are being proposed should be introduced here, explaining their use case and
+generally why it is a good fit for purpose. If any older components already
+accepted in DigitalSafe are being replaced or superceded, the benefits over the
+prior solution should be discussed.
+
+Optionally, a diagram may be useful here if there are many aspects to the
+technical design that need to fit together. This can be accomplished with the
+following:
+
+```
+image::my_diagram.png[]
+```
+
+The implementation details are _primarily_ the concern of the engineering teams,
+but may require discussion with other teams depending upon the size, severity,
+and content of the proposal.
+
+=== Scaling
+
+Additionally, as part of the implementation details section or a subsection, the
+scaling of the feature (if relevant) should be discussed.
+
+=== Failure modes 
+
+For the features and/or technologies being proposed as part of the technical
+document, the _failure modes_ for each should be listed and discussed. These
+include possible states of the component's environment that would cause a
+variation in the operation of that component in such a way that the feature as a
+whole may not work as expected. The consequences of these failures and possible
+rectification or remediation possibilities should be explored.
+
+The failure modes are the concern of the engineering and operations teams.
+
+=== Backwards compatibility
+
+Any APIs, be it REST, MBean, or RMI/ZNIO interfaces that are to be modified as
+a consequence of this proposal should be listed, along with whether these
+changes are backwards compatible. If they are not backwards compatible, the
+reasons for this should be detailed, along with potential alternatives for
+calling code or clients.
+
+=== Alternatives considered
+
+If relevant, it may be beneficial to quickly state alternative technologies or
+approaches considered and rejected as part of the creation of the technical
+proposal. These explanations may aid the reader in interpreting the document and
+assisting in future technical evaluations.
+
+
+== Resourcing, hardware and costing
+
+Based upon knowledge of the requirements and technologies involved, the
+resources required (in terms of CPU, RAM, network bandwidth, and raw storage)
+should be discussed and estimated here. The location of the components in
+context of the DigitalSafe infrastructure should be discussed (such as machine
+types) and if any native software components or additional hardware are
+introduced then special attention should be paid to what operating systems are
+required for the proposed design.
+
+Resourcing and prerequisites may need review from the engineering,
+implementations, systems engineering and operations teams. Additionally, if the
+resourcing is particularly non-standard it may require business input from
+product management.
+
+
+== Operation and monitoring
+
+If _relevant_ to the proposed design, this section should discuss how the new
+feature and/or any new technologies introduced as part of this design can be
+managed by the operations team, including whether existing tools will suffice to
+automate and manage the feature/technologies and if not, what will be produced
+as part of the engineering process. For new technologies, be it software or
+hardware, the procedure for verifying the health of the relevant aspects and the
+proposed mechanism(s) for monitoring them should be discussed. Considerations
+regarding the upkeep and future maintenance of any software and hardware
+components should be considered, particularly if security aspects are involved.
+
+The content of this section (if required) is _primarily_ the concern of the
+operations and monitoring teams.
+
+
+== Build and deployment
+
+If the component is anything other than plain Java code or modification to an
+existing deployed package, the reasoning behind the complexity should be
+discussed here, along with a proposed mechanism for building and deploying the
+new component(s). There should be particular attention to any cases where
+additional infrastructure is required to support a build process which is
+currently not part of the engineering CI workflow.
+
+This section is _primarily_ the concern of the operations team.
