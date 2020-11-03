@@ -17,21 +17,15 @@ public class Greeter extends AbstractActor {
     this.printerActor = printerActor;
   }
 
-
-
-  //#greeter-messages - They must be immutable
-  static public class WhoToGreet {
-    public final String who;
+  public static final class WhoToGreet {
+    private final String who;
 
     public WhoToGreet(String who) {
         this.who = who;
     }
   }
 
-  static public class Greet {
-    public Greet() {
-    }
-  }
+  public static final class Greet {}
 
   @Override
   public Receive createReceive() {
@@ -40,15 +34,12 @@ public class Greeter extends AbstractActor {
           this.greeting = message + ", " + wtg.who;
         })
         .match(Greet.class, x -> {
-          //#greeter-send-message
           printerActor.tell(new Greeting(greeting), getSelf());
-          //#greeter-send-message
         })
         .build();
   }
 
-  //props
-  static public Props props(String message, ActorRef printerActor) {
+  public static Props props(String message, ActorRef printerActor) {
     return Props.create(Greeter.class, () -> new Greeter(message, printerActor));
   }
 }

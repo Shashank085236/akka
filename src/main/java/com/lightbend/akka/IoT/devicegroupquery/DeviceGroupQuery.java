@@ -29,7 +29,7 @@ import akka.event.LoggingAdapter;
  * In our case, we use the same dispatcher as the actor by passing in getContext().dispatcher().
  *
  * The scheduler.scheduleOnce(time, actorRef, message, executor, sender)
- * method will schedule the message message into the future by the specified time and send it to the actor actorRef.
+ * method will schedule the message into the future by the specified time and send it to the actor actorRef.
  *
  * We need to create a message that represents the query timeout. We create a simple message CollectionTimeout without any parameters for this purpose.
  * The return value from scheduleOnce is a Cancellable which can be used to cancel the timer if the query finishes successfully in time.

@@ -1,6 +1,7 @@
 package com.lightbend.akka.IoT;
 
 import akka.actor.AbstractActor;
+import akka.actor.AbstractLoggingActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.actor.Terminated;
@@ -11,8 +12,7 @@ import com.lightbend.akka.IoT.devicegroups.DeviceGroup;
 import java.util.HashMap;
 import java.util.Map;
 
-public class DeviceManager extends AbstractActor {
-    private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
+public class DeviceManager extends AbstractLoggingActor {
 
     public static Props props() {
         return Props.create(DeviceManager.class);
@@ -36,12 +36,12 @@ public class DeviceManager extends AbstractActor {
 
     @Override
     public void preStart() {
-        log.info("DeviceManager started");
+        log().info("DeviceManager started");
     }
 
     @Override
     public void postStop() {
-        log.info("DeviceManager stopped");
+        log().info("DeviceManager stopped");
     }
 
     private void onTrackDevice(RequestTrackDevice trackMsg) {
@@ -50,7 +50,7 @@ public class DeviceManager extends AbstractActor {
         if (ref != null) {
             ref.forward(trackMsg, getContext());
         } else {
-            log.info("Creating device group actor for {}", groupId);
+            log().info("Creating device group actor for {}", groupId);
             ActorRef groupActor = getContext().actorOf(DeviceGroup.props(groupId), "group-" + groupId);
             getContext().watch(groupActor);
             groupActor.forward(trackMsg, getContext());
@@ -62,7 +62,7 @@ public class DeviceManager extends AbstractActor {
     private void onTerminated(Terminated t) {
         ActorRef groupActor = t.getActor();
         String groupId = actorToGroupId.get(groupActor);
-        log.info("Device group actor for {} has been terminated", groupId);
+        log().info("Device group actor for {} has been terminated", groupId);
         actorToGroupId.remove(groupActor);
         groupIdToActor.remove(groupId);
     }

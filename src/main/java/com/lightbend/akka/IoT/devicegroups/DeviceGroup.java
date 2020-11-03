@@ -1,11 +1,9 @@
 package com.lightbend.akka.IoT.devicegroups;
 
-import akka.actor.AbstractActor;
+import akka.actor.AbstractLoggingActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.actor.Terminated;
-import akka.event.Logging;
-import akka.event.LoggingAdapter;
 import com.lightbend.akka.IoT.DeviceManager;
 import com.lightbend.akka.IoT.devicegroupquery.DeviceGroupQuery;
 import com.lightbend.akka.IoT.devices.Device;
@@ -17,18 +15,16 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 //#query-added
-public class DeviceGroup extends AbstractActor {
-    private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
+public class DeviceGroup extends AbstractLoggingActor {
 
     final String groupId;
+    final Map<String, ActorRef> deviceIdToActor = new HashMap<>();
+    final Map<ActorRef, String> actorToDeviceId = new HashMap<>();
 
     public DeviceGroup(String groupId) {
         this.groupId = groupId;
     }
 
-    public static Props props(String groupId) {
-        return Props.create(DeviceGroup.class, groupId);
-    }
 
     public static final class RequestDeviceList {
         final long requestId;
@@ -96,21 +92,16 @@ public class DeviceGroup extends AbstractActor {
     }
     //#query-protocol
 
-
-    final Map<String, ActorRef> deviceIdToActor = new HashMap<>();
-    final Map<ActorRef, String> actorToDeviceId = new HashMap<>();
-    final long nextCollectionId = 0L;
-
     @Override
-    public void preStart() {
-        log.info("DeviceGroup {} started", groupId);
+    public Receive createReceive() {
+        //#query-added
+        return receiveBuilder()
+                .match(DeviceManager.RequestTrackDevice.class, this::onTrackDevice)
+                .match(RequestDeviceList.class, this::onDeviceList)
+                .match(Terminated.class, this::onTerminated)
+                .match(RequestAllTemperatures.class, this::onAllTemperatures)
+                .build();
     }
-
-    @Override
-    public void postStop() {
-        log.info("DeviceGroup {} stopped", groupId);
-    }
-
     //#query-added
 
     /**
@@ -125,7 +116,7 @@ public class DeviceGroup extends AbstractActor {
             if (ref != null) {
                 ref.forward(requestTrackDevice, getContext());
             } else {
-                log.info("Creating device actor for {}", requestTrackDevice.deviceId);
+                log().info("Creating device actor for {}", requestTrackDevice.deviceId);
                 ActorRef deviceActor = getContext().actorOf(Device.props(groupId, requestTrackDevice.deviceId), "device-" + requestTrackDevice.deviceId);
                 getContext().watch(deviceActor);
                 deviceActor.forward(requestTrackDevice, getContext());
@@ -133,7 +124,7 @@ public class DeviceGroup extends AbstractActor {
                 deviceIdToActor.put(requestTrackDevice.deviceId, deviceActor);
             }
         } else {
-            log.warning(
+            log().warning(
                     "Ignoring TrackDevice request for {}. This actor is responsible for {}.",
                     groupId, this.groupId
             );
@@ -147,7 +138,7 @@ public class DeviceGroup extends AbstractActor {
     private void onTerminated(Terminated t) {
         ActorRef deviceActor = t.getActor();
         String deviceId = actorToDeviceId.get(deviceActor);
-        log.info("Device actor for {} has been terminated", deviceId);
+        log().info("Device actor for {} has been terminated", deviceId);
         actorToDeviceId.remove(deviceActor);
         deviceIdToActor.remove(deviceId);
     }
@@ -164,14 +155,18 @@ public class DeviceGroup extends AbstractActor {
                 actorToDeviceIdCopy, r.requestId, getSender(), new FiniteDuration(3, TimeUnit.SECONDS)));
     }
 
+
     @Override
-    public Receive createReceive() {
-        //#query-added
-        return receiveBuilder()
-                .match(DeviceManager.RequestTrackDevice.class, this::onTrackDevice)
-                .match(RequestDeviceList.class, this::onDeviceList)
-                .match(Terminated.class, this::onTerminated)
-                .match(RequestAllTemperatures.class, this::onAllTemperatures)
-                .build();
+    public void preStart() {
+        log().info("DeviceGroup {} started", groupId);
+    }
+
+    @Override
+    public void postStop() {
+        log().info("DeviceGroup {} stopped", groupId);
+    }
+
+    public static Props props(String groupId) {
+        return Props.create(DeviceGroup.class, groupId);
     }
 }

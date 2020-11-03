@@ -15,9 +15,16 @@ There are 2 basic problems with this approach:
 
 
 ==== How Actor model solves the problem?
+* The following characteristics of Akka allow you to solve difficult concurrency and scalability challenges in an intuitive way:
+
+** Event-driven model — Actors perform work in response to messages. Communication between Actors is asynchronous, allowing Actors to send messages and continue their own work without blocking to wait for a reply.
+** Strong isolation principles — Unlike regular objects in Java, an Actor does not have a public API in terms of methods that you can invoke. Instead, its public API is defined through messages that the actor handles. This prevents any sharing of state between Actors; the only way to observe another actor’s state is by sending it a message asking for it.
+** Location transparency — The system constructs Actors from a factory and returns references to the instances. Because location doesn’t matter, Actor instances can start, stop, move, and restart to scale up and down as well as recover from unexpected failures.
+** Lightweight — Each instance consumes only a few hundred bytes, which realistically allows millions of concurrent Actors to exist in a single application.
 
 * In Actor model, instead of calling methods, messages are passed around. Akka guarantees one message being processed at a time by an actor naturally solves synchronization and race conditions issues.
 Entities communicate each other through message signals by reacting to signals, changing states and sending signals in order to drive application state forward.
+
 * Error handling in Actor model:
 ** There is an error in task: The service Actor should reply with error message to sender.
 ** Service has internal fault: When an Actor fails, parent Actor(Supervisor) is notified and it reacts based on several strategies like restart Actor node or  restart whole sub-tree Actor nodes etc.
